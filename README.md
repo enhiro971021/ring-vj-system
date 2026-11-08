@@ -120,10 +120,9 @@ npm run preview
 
 `npm run check` は型チェック、`npm run build` は型チェックと配信用ファイルの生成、`npm run preview` はビルド結果をローカルで起動します。表示されたLocal URLをChromeで開いてください。素材フォルダを使う場合も、このローカルサーバー経由で起動します。
 
-## 謝辞
+## 関連プロジェクトと使用ライブラリ
 
-- 固定の前景と「霧」の背景は、作者のTouchDesigner作品「霧の三重奏」を基にしています。
-- 音声の帯域分担や処理の分離は、作者の過去作 [greenVJ](https://github.com/enhiro971021/greenVJ) と [WebReactiveVJ](https://github.com/enhiro971021/WebReactiveVJ) を参考にしています。GLSLと残像処理は新規実装です。
+- 作者の過去作 [greenVJ](https://github.com/enhiro971021/greenVJ) の表現や音声処理の考え方を引き継ぎ、ブラウザ向けに開発しています。
 - 顔・姿勢の認識には [MediaPipe](https://developers.google.com/mediapipe) のモデルと実行ファイルを同梱しています。[出典とライセンス](public/mediapipe/README.md)
 
 ## ライセンス
