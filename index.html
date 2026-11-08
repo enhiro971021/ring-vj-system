@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101116" />
+  <meta name="description" content="音に反応する白い輪に、音と独立して動く背景を組み合わせるローカルVJ。ロゴと動画も重ねられます。" />
+  <title>RING VJ System</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23101116'/%3E%3Cpath d='M8 42Q24 8 40 28T60 16M4 52Q24 18 40 38T62 28' fill='none' stroke='%23b5b1e8' stroke-width='3'/%3E%3C/svg%3E" />
+</head>
+<body>
+<main id="app">
+  <header class="topbar controls">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">≋</span><h1>RING VJ System</h1></div>
+    <div class="top-actions">
+      <button id="hide" type="button">映像だけ <kbd>H</kbd></button>
+      <button id="fullscreen" type="button">全画面 <kbd>F</kbd></button>
+      <button id="blackout-button" type="button" aria-pressed="false">暗転 <kbd>B</kbd></button>
+      <button id="output" class="primary" type="button"><span aria-hidden="true">▣</span> 映像を別窓へ</button>
+    </div>
+  </header>
+  <div class="workspace">
+    <aside class="parameter-column controls" aria-label="動く線と背景の調整">
+      <section class="audio-panel controls" aria-labelledby="audio-title">
+        <div class="panel-heading"><h2 id="audio-title">動く線</h2><div class="signal"><label>低音 <meter id="low" min="0" max="1" value="0" aria-label="低音の強さ"></meter></label><label>中音 <meter id="mid" min="0" max="1" value="0" aria-label="中音の強さ"></meter></label><label>高音 <meter id="high" min="0" max="1" value="0" aria-label="高音の強さ"></meter></label></div></div>
+        <div class="input-row"><button id="microphone" class="microphone-button" type="button">◉ マイクを開始</button><select id="device" aria-label="入力するマイク"><option value="">標準のマイク</option></select></div>
+        <p id="status" class="hint" role="status" aria-live="polite">マイク未接続。模様だけ動かしています。</p>
+        <div class="foreground-parameters" id="foreground-controls" role="group" aria-label="音への感度"></div>
+        <div id="foreground-effects" role="group" aria-label="線の残像"></div>
+        <details class="control-help"><summary>感度・輪の反応について</summary>
+          <p id="sensitivity-hint" class="hint">全体で反応の強さ、低・中・高音でバランスを調整。1×が標準、帯域の0×は反応なし。音への反応は白い線に適用します。</p>
+          <p id="foreground-trail-hint" class="hint">白い輪の軌跡を残します。背景の残像とは別に調整できます。</p>
+          <div class="foreground-guide"><h3>白い輪の反応 <span>全背景で共通</span></h3><p>輪郭は全帯域の生スペクトルで変形。低音は中央の抜け、中音は大きさと明るさ、高音は周囲の光に反映します。</p></div>
+        </details>
+      </section>
+
+      <section class="motion-panel controls" aria-labelledby="motion-title">
+        <div class="panel-heading"><h2 id="motion-title">背景</h2></div>
+        <div class="parameters" id="motion-controls"></div>
+        <details class="control-help"><summary>背景の調整について</summary>
+          <p id="background-brightness-hint" class="hint">背景だけを明るくします。白い輪の明るさは保たれます。</p>
+          <p id="background-independent" class="hint">背景は音に反応せず、一定の速さで動きます。速度・歪み・残像で調整できます。</p>
+        </details>
+      </section>
+    </aside>
+
+    <section class="center-column" aria-label="プレビューと演出">
+      <div class="preview-panel">
+        <div class="preview-heading controls"><div><span class="live-dot" aria-hidden="true"></span><span id="current-name">流紋</span><span class="preview-badge">白い輪 ＋ 背景</span><span id="current-look" class="preview-badge">鮮色グラフィック</span><span id="camera-output-badge" class="preview-badge camera-output-badge" hidden>カメラ映像 · 出力中</span></div><span id="fps" class="muted" aria-label="描画速度">— fps</span></div>
+        <div id="stage"><canvas id="visual" aria-label="合成したVJ映像のプレビュー"></canvas><p id="render-error" role="alert" hidden></p><span id="blackout-label" class="controls" hidden>暗転中</span></div>
+        <div class="preview-footer controls"><p id="current-description">精密な点の列が、一つの大きな曲面として波打つ</p><div><button id="pause" type="button" aria-pressed="false">一時停止 <kbd>Space</kbd></button><button id="next" type="button">次の背景 <span aria-hidden="true">›</span></button></div></div>
+      </div>
+
+      <section class="library controls" aria-label="背景の選択">
+        <div class="panel-heading"><div class="collection-heading"><h2>背景を選ぶ</h2><span class="hint">左右にループ</span></div><div class="list-navigation"><span id="preset-count" class="muted"></span><button id="presets-previous" type="button" aria-label="背景一覧を左へ" aria-controls="presets">‹</button><button id="presets-next" type="button" aria-label="背景一覧を右へ" aria-controls="presets">›</button></div></div>
+        <div class="cycle-actions" data-cycle-kind="background" role="group" aria-label="背景の自動切替対象">
+          <span>自動切替 <span class="cycle-count"></span></span>
+          <div><button data-cycle-action="all" type="button" aria-label="背景の自動切替をすべてチェック" aria-controls="presets">すべてチェック</button><button data-cycle-action="clear" type="button" aria-label="背景の自動切替をすべてクリア" aria-controls="presets">すべてクリア</button></div>
+        </div>
+        <div id="presets" class="preset-grid" role="group" aria-label="背景一覧" tabindex="0"></div>
+        <section class="library-palettes" aria-labelledby="background-palette-title">
+          <div class="panel-heading"><div class="palette-heading"><h3 id="background-palette-title">配色セット</h3><span id="background-palette-label" class="hint">背景ごとの配色</span></div><div class="list-navigation"><button id="palettes-previous" type="button" aria-label="配色セットを左へ" aria-controls="background-palettes">‹</button><button id="palettes-next" type="button" aria-label="配色セットを右へ" aria-controls="background-palettes">›</button></div></div>
+          <div class="cycle-actions" data-cycle-kind="palette" role="group" aria-label="配色の自動切替対象">
+            <span>自動切替 <span class="cycle-count"></span></span>
+            <div><button data-cycle-action="all" type="button" aria-label="配色の自動切替をすべてチェック" aria-controls="background-palettes">すべてチェック</button><button data-cycle-action="clear" type="button" aria-label="配色の自動切替をすべてクリア" aria-controls="background-palettes">すべてクリア</button></div>
+          </div>
+          <div id="background-palettes" class="palette-swatches" role="group" aria-label="背景の配色セット" tabindex="0"></div>
+          <div class="palette-footer"><p id="palette-cycle-hint" class="hint palette-cycle-hint">背景ごとに保存した配色を使います</p><button id="background-preset-colors" class="text-button" type="button">保存した配色を使う</button></div>
+        </section>
+        <div class="library-footer">
+          <div class="setting-row"><label for="transition">切替のなめらかさ</label><select id="transition"><option value="0">即切替</option><option value="0.6">0.6秒</option><option value="1.5" selected>1.5秒</option><option value="3">3秒</option></select></div>
+          <div class="auto-row"><button id="auto" type="button" aria-pressed="false">自動切替 オフ</button><select id="auto-interval" aria-label="自動切替の間隔"><option value="20">20秒ごと</option><option value="40" selected>40秒ごと</option><option value="60">60秒ごと</option></select></div>
+          <p id="auto-status" class="hint">対象の背景を順に切り替えます。</p>
+        </div>
+      </section>
+
+      <section class="output-controls controls" aria-labelledby="output-title">
+        <div class="panel-heading"><h2 id="output-title">共通の出力</h2><button id="reset" class="text-button" type="button">動き・感度・明るさを戻す</button></div>
+        <div class="output-settings">
+          <div id="output-controls"></div>
+          <div class="output-quality"><label for="quality">画質</label><select id="quality"><option value="auto">標準 · 1600 × 900</option><option value="high">高画質 · 1920 × 1080</option><option value="low">軽量 · 1280 × 720</option></select></div>
+        </div>
+      </section>
+      <p id="notice" class="notice controls" role="status" aria-live="polite">背景と配色を選び、右のパネルで部分ごとの色や素材を調整できます。</p>
+    </section>
+
+    <aside class="inspector controls" aria-label="色・素材とカメラの調整">
+      <div class="inspector-tabs" role="tablist" aria-label="調整する項目"><button id="color-tab" role="tab" aria-selected="true" aria-controls="color-panel" type="button">カラー</button><button id="media-tab" role="tab" aria-selected="false" aria-controls="media-panel" tabindex="-1" type="button">ロゴ・動画</button><button id="camera-tab" role="tab" aria-selected="false" aria-controls="camera-panel" tabindex="-1" type="button">カメラ</button></div>
+      <section id="color-panel" class="inspector-body" role="tabpanel" aria-labelledby="color-tab">
+        <div class="section-heading"><h2>背景の色を選ぶ</h2><p>この背景だけの配色を調整・保存します。</p></div>
+        <div class="color-mode"><span id="color-mode-label">背景の配色</span><span>クリックして色を変更</span></div>
+        <div id="color-inputs" class="color-inputs" role="group" aria-label="部分ごとの色"></div>
+        <p id="color-format" class="hint color-format">HEXは3桁・6桁で入力できます。赤枠の値は未反映です。</p>
+        <p id="background-color-status" class="hint" role="status">この背景に自動保存されます。</p>
+        <button id="preset-colors" class="wide-button" type="button">この背景の配色をリセット</button>
+        <details id="palette-library" class="palette-section"><summary>配色セットから選ぶ・編集</summary>
+          <div class="cycle-actions" data-cycle-kind="palette" role="group" aria-label="配色の自動切替対象">
+            <span>自動切替 <span class="cycle-count"></span></span>
+            <div><button data-cycle-action="all" type="button" aria-label="配色の自動切替をすべてチェック" aria-controls="palettes">すべてチェック</button><button data-cycle-action="clear" type="button" aria-label="配色の自動切替をすべてクリア" aria-controls="palettes">すべてクリア</button></div>
+          </div>
+          <div id="palettes" class="palette-list" role="group" aria-label="配色セット"></div>
+        </details>
+        <div class="look-section"><h2>背景の表現を選ぶ</h2><div id="looks" class="look-list" role="group" aria-label="背景の表現"></div></div>
+        <div class="inspector-note"><span aria-hidden="true">◌</span><p>配色と表現は背景に反映されます。白い輪・ロゴ・動画の色は保たれます。</p></div>
+      </section>
+      <section id="media-panel" class="inspector-body" role="tabpanel" aria-labelledby="media-tab" hidden>
+        <div class="section-heading"><p>背景 → 白い輪 → 動画 → ロゴの順で合成。</p></div>
+        <details id="logo-maker" class="logo-maker"><summary>文字からロゴを作る</summary><div id="logo-maker-controls"></div></details>
+        <details id="media-folder-details" class="media-folder-details"><summary>素材フォルダから選ぶ</summary><section id="media-folder" class="media-folder" aria-label="素材フォルダ"></section></details>
+        <div id="media-slots"></div>
+        <details class="control-help"><summary>素材の読み込み・重ね方</summary><p class="hint">白背景のロゴ・動画は「白を透過」、黒背景は「黒を透過」を選びます。スクリーン・加算は黒背景をなじませる重ね方です。「抜く範囲」は背景が消える最小限に合わせ、ロゴまで薄くなる場合は下げます。「境界ぼかし」で輪郭のなじみ方を調整できます。「位置を調整」で左右・上下を動かし、「中央に合わせる」で表示中のロゴを中央へ寄せられます。「画像を選ぶ」「動画を選ぶ」はその場限りで、フォルダへの保存はしません。</p></details>
+      </section>
+      <section id="camera-panel" class="inspector-body" role="tabpanel" aria-labelledby="camera-tab" hidden>
+        <label class="camera-device-label" for="camera-device">カメラの入力元</label>
+        <select id="camera-device"><option value="">標準のカメラ</option></select>
+        <div class="camera-monitor">
+          <div>
+          <div id="camera-preview" class="camera-preview">
+            <video id="camera-video" muted playsinline aria-label="姿勢確認用のカメラ映像" hidden></video>
+            <svg id="camera-figure" viewBox="0 0 200 150" aria-hidden="true"><path d="M24 126H176" class="camera-ground"/><g id="camera-body" hidden><circle cx="100" cy="43" r="13"/><path d="M64 78Q100 66 136 78M100 57V116M64 78L54 108M136 78L146 108"/></g><g id="camera-face"><ellipse cx="100" cy="70" rx="29" ry="36"/><path d="M86 62h4m20 0h4M89 87q11 7 22 0"/><path id="camera-nose" d="M100 68v9"/></g></svg>
+          </div>
+          <p id="camera-preview-label" class="camera-tracking-status">カメラはオフ</p>
+          </div>
+          <div class="camera-input-actions">
+            <button id="camera-start" type="button" aria-pressed="false">カメラを開始</button>
+            <p id="camera-input-status" class="hint camera-status" role="status" aria-live="polite">カメラは停止しています。</p>
+          </div>
+        </div>
+        <div class="camera-presentation">
+          <div class="performance-modes" role="group" aria-label="カメラの常時表示"><button id="performance-dj" type="button" aria-pressed="true">常時カメラOFF</button><button id="performance-live" type="button" aria-pressed="false">常時カメラON</button></div>
+          <div id="live-camera-controls" hidden><label class="parameter" for="live-opacity"><span>映像の濃さ<output id="live-opacity-value" for="live-opacity">25%</output></span><input id="live-opacity" type="range" min="0" max="1" step="0.01" value="0.25" /></label></div>
+          <p id="camera-output-status" class="camera-output-status" role="status" aria-live="polite">カメラ映像は出力していません。</p>
+        </div>
+        <div class="camera-motion">
+          <div class="setting-row camera-tracking-row"><label for="camera-tracking">背景が追う動き</label><select id="camera-tracking"><option value="face" selected>顔</option><option value="body">肩・上半身</option></select></div>
+          <div id="camera-face-effects" class="camera-face-effects" role="group" aria-label="顔の動きによる効果">
+            <label class="check-row"><input id="camera-effect-tilt" type="checkbox" checked />回転</label>
+            <label class="check-row"><input id="camera-effect-shift" type="checkbox" checked />移動</label>
+            <label class="check-row"><input id="camera-effect-turn" type="checkbox" checked />遠近感</label>
+          </div>
+          <div id="camera-sensitivity-control"></div>
+          <button id="camera-calibrate" class="wide-button" type="button" disabled>今の顔を基準にする</button>
+          <p id="camera-status" class="hint camera-status" role="status" aria-live="polite">顔全体を映してください。最初の姿勢が基準になります。</p>
+        </div>
+        <details id="camera-details" class="camera-details">
+          <summary>詳細設定<span id="camera-demo-indicator" hidden>デモ中</span></summary>
+          <div class="camera-details-body">
+            <label class="check-row"><input id="camera-auto-start" type="checkbox" />起動時にカメラを自動で開始</label>
+            <label class="check-row"><input id="camera-image-mirror" type="checkbox" checked />映像を左右反転</label>
+            <label class="check-row"><input id="camera-mirror" type="checkbox" checked />動きの左右を反転</label>
+            <button id="camera-demo" class="wide-button" type="button" aria-pressed="false">顔の動きを試す</button>
+            <p class="hint">機器名はカメラの許可後に表示されます。縦向き映像は中央を残して上下を切ります。</p>
+          </div>
+        </details>
+      </section>
+    </aside>
+  </div>
+  <button id="restore" type="button" hidden>操作を表示 <kbd>H</kbd></button>
+</main>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
