@@ -41,13 +41,13 @@ export class OutputWindow {
       doc.documentElement.lang = 'ja';
       const style = doc.createElement('style');
       style.textContent = `
-        *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}
+        *{box-sizing:border-box;cursor:none}html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}
         body{font:13px -apple-system,BlinkMacSystemFont,sans-serif;color:#f2f5f8}
         video{display:block;width:100%;height:100%;object-fit:contain;background:#000}
         .tools{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px);padding:12px 16px;border:1px solid #ffffff22;border-radius:9px;background:#10151ee8;transition:opacity 150ms;white-space:nowrap}
-        button{font:inherit;color:inherit;background:#ffffff15;border:1px solid #ffffff25;padding:9px 13px;border-radius:6px;cursor:pointer}
+        button{font:inherit;color:inherit;background:#ffffff15;border:1px solid #ffffff25;padding:9px 13px;border-radius:6px}
         button:focus-visible{outline:2px solid #c5ddf1;outline-offset:3px}.hint{color:#c2cad4;font-size:12px}
-        .idle{cursor:none}.idle .tools{opacity:0;pointer-events:none}.tools:focus-within{opacity:1;pointer-events:auto}
+        .idle .tools{opacity:0;pointer-events:none}.tools:focus-within{opacity:1;pointer-events:auto}
         @media(max-width:650px){.hint{display:none}.tools{bottom:12px}}
         @media(prefers-reduced-motion:reduce){.tools{transition:none}}
       `;
